@@ -53,6 +53,12 @@ node bin/pr-sentinel.js scan --diff pr.diff --ai-provider anthropic --ai-model c
 node bin/pr-sentinel.js scan --diff pr.diff --ai-provider ollama --ai-model llama3.1
 ```
 
+Use Simplified Chinese reports:
+
+```bash
+node bin/pr-sentinel.js scan --diff pr.diff --locale zh-CN
+```
+
 ## GitHub Action
 
 ```yaml
@@ -75,6 +81,7 @@ jobs:
           fetch-depth: 0
       - uses: yaowenjie0805-sys/pr-sentinel@v1
         with:
+          locale: zh-CN
           fail-on: high
           min-severity: info
           ai-provider: openai
@@ -91,6 +98,7 @@ Use Anthropic by setting `ai-provider: anthropic` and `ANTHROPIC_API_KEY`. Use O
 Create `.pr-sentinel.yml`:
 
 ```yaml
+locale: zh-CN
 failOn: high
 minSeverity: info
 
@@ -127,6 +135,7 @@ CLI flags override the config file. The config file overrides built-in defaults.
 
 ```text
 --config <path>          Read .pr-sentinel.yml from a custom path.
+--locale <en|zh-CN>      Report language. Defaults to en.
 --diff <path>            Read a unified diff from a file. Defaults to git diff base...HEAD.
 --format <markdown|json|sarif> Output format. Defaults to markdown.
 --fail-on <severity>     Exit 1 when a finding meets this severity. Use none to never fail.
@@ -151,6 +160,10 @@ Baseline files help teams adopt PR Sentinel in repositories with known legacy fi
 node bin/pr-sentinel.js scan --diff pr.diff --update-baseline --fail-on none --no-ai
 node bin/pr-sentinel.js scan --diff pr.diff --baseline .pr-sentinel-baseline.json
 ```
+
+## Chinese Reports
+
+Set `locale: zh-CN` or pass `--locale zh-CN` to localize deterministic rule titles, messages, recommendations, Markdown table labels, GitHub annotations, and AI fallback messages. When AI review is enabled, PR Sentinel also asks the model to return Chinese findings.
 
 ## Release
 

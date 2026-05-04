@@ -10,14 +10,14 @@ export async function reviewWithAi(diffText, config, options = {}) {
   const adapter = createAiAdapter(config.ai, options.env ?? process.env, options.fetchImpl ?? fetch);
 
   if (!adapter.available) {
-    return [createAiStatusFinding(`AI review skipped: ${adapter.reason}`)];
+      return [createAiStatusFinding(`AI review skipped: ${adapter.reason}`, config.locale)];
   }
 
   try {
     return await adapter.review(diffText, config);
   } catch (error) {
     if (config.ai.strict) throw error;
-    return [createAiStatusFinding(`AI review skipped: ${error.message}`)];
+    return [createAiStatusFinding(`AI review skipped: ${error.message}`, config.locale)];
   }
 }
 
@@ -43,7 +43,7 @@ function createOpenAiAdapter(aiConfig, env, fetchImpl) {
 
   return {
     available: true,
-    async review(diffText) {
+    async review(diffText, config = {}) {
       const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
@@ -52,7 +52,7 @@ function createOpenAiAdapter(aiConfig, env, fetchImpl) {
         },
         body: JSON.stringify({
           model: aiConfig.model,
-          input: buildPrompt(diffText),
+          input: buildPrompt(diffText, config.locale),
         }),
       }, aiConfig.timeoutMs, fetchImpl);
       const data = await readJsonResponse(response);
@@ -69,7 +69,7 @@ function createAnthropicAdapter(aiConfig, env, fetchImpl) {
 
   return {
     available: true,
-    async review(diffText) {
+    async review(diffText, config = {}) {
       const response = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -80,7 +80,7 @@ function createAnthropicAdapter(aiConfig, env, fetchImpl) {
         body: JSON.stringify({
           model: aiConfig.model,
           max_tokens: 1200,
-          messages: [{ role: "user", content: buildPrompt(diffText) }],
+          messages: [{ role: "user", content: buildPrompt(diffText, config.locale) }],
         }),
       }, aiConfig.timeoutMs, fetchImpl);
       const data = await readJsonResponse(response);
@@ -93,14 +93,14 @@ function createAnthropicAdapter(aiConfig, env, fetchImpl) {
 function createOllamaAdapter(aiConfig, fetchImpl) {
   return {
     available: true,
-    async review(diffText) {
+    async review(diffText, config = {}) {
       const baseUrl = aiConfig.baseUrl ?? "http://localhost:11434";
       const response = await fetchWithTimeout(`${baseUrl.replace(/\/$/, "")}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: aiConfig.model,
-          prompt: buildPrompt(diffText),
+          prompt: buildPrompt(diffText, config.locale),
           stream: false,
         }),
       }, aiConfig.timeoutMs, fetchImpl);
@@ -120,8 +120,12 @@ function unavailable(reason) {
   };
 }
 
-function buildPrompt(diffText) {
+function buildPrompt(diffText, locale = "en") {
+  const languageInstruction = locale === "zh-CN"
+    ? "Write title, message, and recommendation in Simplified Chinese."
+    : "Write title, message, and recommendation in English.";
   return `You are PR Sentinel, an enterprise pull request risk reviewer.
+${languageInstruction}
 Return strict JSON only:
 {"findings":[{"severity":"high|medium|low|info","title":"short","message":"specific risk","path":"file path or null","line":number or null,"recommendation":"specific fix"}]}
 
@@ -185,7 +189,20 @@ async function readJsonResponse(response) {
   return response.json();
 }
 
-function createAiStatusFinding(message) {
+function createAiStatusFinding(message, locale = "en") {
+  if (locale === "zh-CN" && message.includes("missing provider credentials")) {
+    return {
+      ruleId: "ai-unavailable",
+      source: "ai",
+      severity: "info",
+      title: "AI 审查不可用",
+      message: "AI 审查已跳过：缺少模型供应商凭据。",
+      path: null,
+      line: null,
+      recommendation: "配置受支持的模型供应商密钥，或使用 --no-ai 运行。",
+    };
+  }
+
   return {
     ruleId: "ai-unavailable",
     source: "ai",

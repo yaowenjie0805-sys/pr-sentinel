@@ -11,6 +11,14 @@ test("returns info finding when OpenAI key is missing", async () => {
   assert.match(findings[0].message, /missing provider credentials/);
 });
 
+test("returns localized AI status finding when credentials are missing", async () => {
+  const config = normalizeConfig({ locale: "zh-CN", ai: { provider: "openai", enabled: true } });
+  const findings = await reviewWithAi("diff --git a/a.js b/a.js", config, { env: {} });
+
+  assert.equal(findings[0].title, "AI 审查不可用");
+  assert.match(findings[0].message, /缺少模型供应商凭据/);
+});
+
 test("passes custom OpenAI model to provider", async () => {
   let requestBody = null;
   const adapter = createAiAdapter(

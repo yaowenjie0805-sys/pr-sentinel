@@ -2,6 +2,7 @@
 
 ## 1.0.0
 
+- Added Simplified Chinese report support with `locale: zh-CN` and `--locale zh-CN`.
 - Added high-value engineering rules for GitHub Actions, Dockerfile, Kubernetes, Terraform, SQL migrations, and npm lifecycle scripts.
 - Made npm publishing optional when `NPM_TOKEN` is not configured.
 - Added SARIF output for GitHub Code Scanning.

@@ -1,6 +1,7 @@
 import { formatSarif } from "./sarif.js";
+import { getUiText } from "./locales.js";
 
-export function formatResult(result, format = "markdown") {
+export function formatResult(result, format = "markdown", options = {}) {
   if (format === "json") {
     return `${JSON.stringify(result, null, 2)}\n`;
   }
@@ -9,25 +10,26 @@ export function formatResult(result, format = "markdown") {
     return `${JSON.stringify(formatSarif(result), null, 2)}\n`;
   }
 
-  return formatMarkdown(result);
+  return formatMarkdown(result, options);
 }
 
-function formatMarkdown(result) {
+function formatMarkdown(result, options = {}) {
+  const ui = getUiText(options.locale ?? result.locale);
   const lines = [
-    "# PR Sentinel Report",
+    `# ${ui?.reportTitle ?? "PR Sentinel Report"}`,
     "",
-    `Scanned ${result.filesScanned} changed file${result.filesScanned === 1 ? "" : "s"}.`,
+    ui?.scannedFiles ? ui.scannedFiles(result.filesScanned) : `Scanned ${result.filesScanned} changed file${result.filesScanned === 1 ? "" : "s"}.`,
     "",
-    `Findings: ${result.summary.total} total, ${result.summary.high} high, ${result.summary.medium} medium, ${result.summary.low} low, ${result.summary.info} info.`,
+    ui?.findingsSummary ? ui.findingsSummary(result.summary) : `Findings: ${result.summary.total} total, ${result.summary.high} high, ${result.summary.medium} medium, ${result.summary.low} low, ${result.summary.info} info.`,
     "",
   ];
 
   if (result.findings.length === 0) {
-    lines.push("No risk signals detected.");
+    lines.push(ui?.noFindings ?? "No risk signals detected.");
     return `${lines.join("\n")}\n`;
   }
 
-  lines.push("| Severity | Rule | Location | Finding |");
+  lines.push(`| ${ui?.table.severity ?? "Severity"} | ${ui?.table.rule ?? "Rule"} | ${ui?.table.location ?? "Location"} | ${ui?.table.finding ?? "Finding"} |`);
   lines.push("| --- | --- | --- | --- |");
 
   for (const finding of result.findings) {
@@ -39,6 +41,7 @@ function formatMarkdown(result) {
 }
 
 export function toGitHubAnnotations(result) {
+  const ui = getUiText(result.locale);
   return result.findings
     .filter((finding) => finding.path && finding.line)
     .map((finding) => ({
@@ -47,7 +50,9 @@ export function toGitHubAnnotations(result) {
       end_line: finding.line,
       annotation_level: toAnnotationLevel(finding.severity),
       title: finding.title,
-      message: [finding.message, finding.recommendation].filter(Boolean).join("\n\nRecommendation: "),
+      message: finding.recommendation
+        ? `${finding.message}\n\n${ui?.recommendation ?? "Recommendation"}: ${finding.recommendation}`
+        : finding.message,
     }))
     .slice(0, 50);
 }

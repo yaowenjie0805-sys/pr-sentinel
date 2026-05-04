@@ -27,6 +27,7 @@ github:
 
 test("normalizes defaults and custom AI model", () => {
   const config = normalizeConfig({
+    locale: "zh-CN",
     ai: {
       provider: "ollama",
       model: "qwen2.5-coder",
@@ -35,6 +36,7 @@ test("normalizes defaults and custom AI model", () => {
   });
 
   assert.equal(config.failOn, "high");
+  assert.equal(config.locale, "zh-CN");
   assert.equal(config.ai.provider, "ollama");
   assert.equal(config.ai.model, "qwen2.5-coder");
   assert.equal(config.ai.baseUrl, "http://models.internal:11434");
@@ -42,4 +44,8 @@ test("normalizes defaults and custom AI model", () => {
 
 test("rejects invalid provider", () => {
   assert.throws(() => normalizeConfig({ ai: { provider: "unknown" } }), /Invalid ai.provider/);
+});
+
+test("rejects invalid locale", () => {
+  assert.throws(() => normalizeConfig({ locale: "fr" }), /Invalid locale/);
 });

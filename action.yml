@@ -2,6 +2,10 @@ name: PR Sentinel
 description: Scan pull request diffs for review risk signals.
 author: Yao Wenjie
 inputs:
+  locale:
+    description: Report language. Supports en or zh-CN.
+    required: false
+    default: ""
   config:
     description: Path to a .pr-sentinel.yml config file.
     required: false
@@ -62,6 +66,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token || github.token }}
       run: |
         args=(scan --fail-on "${{ inputs.fail-on }}" --min-severity "${{ inputs.min-severity }}" --format "${{ inputs.format }}")
+        if [ -n "${{ inputs.locale }}" ]; then args+=(--locale "${{ inputs.locale }}"); fi
         if [ -n "${{ inputs.config }}" ]; then args+=(--config "${{ inputs.config }}"); fi
         if [ -n "${{ inputs.exclude-rule }}" ]; then args+=(--exclude-rule "${{ inputs.exclude-rule }}"); fi
         if [ -n "${{ inputs.ai-provider }}" ]; then args+=(--ai-provider "${{ inputs.ai-provider }}"); fi

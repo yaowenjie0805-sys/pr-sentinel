@@ -9,6 +9,7 @@ import { buildScanResult, scanDiff } from "../src/scanner.js";
 import { meetsSeverityThreshold } from "../src/severity.js";
 import { applyBaseline, createBaseline } from "../src/baseline.js";
 import { formatSarif } from "../src/sarif.js";
+import { localizeResult } from "../src/locales.js";
 
 try {
   await main();
@@ -33,6 +34,7 @@ async function main() {
     configPath: args.config,
     overrides: {
       failOn: args["fail-on"],
+      locale: args.locale,
       minSeverity: args["min-severity"],
       excludeRule: args["exclude-rule"],
       noAi: args["no-ai"],
@@ -58,7 +60,8 @@ async function main() {
   );
   const baseline = await loadBaseline(config.baseline.path);
   const result = baseline ? applyBaseline(fullResult, baseline) : fullResult;
-  const output = formatResult(result, args.format ?? "markdown");
+  const localizedResult = localizeResult(result, config.locale);
+  const output = formatResult(localizedResult, args.format ?? "markdown", { locale: config.locale });
 
   process.stdout.write(output);
 
@@ -67,7 +70,7 @@ async function main() {
   }
 
   if (args["write-sarif"]) {
-    await writeFile(args["write-sarif"], `${JSON.stringify(formatSarif(result), null, 2)}\n`);
+    await writeFile(args["write-sarif"], `${JSON.stringify(formatSarif(localizedResult), null, 2)}\n`);
   }
 
   if (config.baseline.update) {
@@ -75,7 +78,7 @@ async function main() {
   }
 
   try {
-    await publishGitHubReport(result, output, config);
+    await publishGitHubReport(localizedResult, output, config);
   } catch (error) {
     process.stderr.write(`Warning: failed to publish GitHub report: ${error.message}\n`);
   }
@@ -163,6 +166,7 @@ Usage:
 
 Options:
   --config <path>          Read .pr-sentinel.yml from a custom path.
+  --locale <en|zh-CN>      Report language. Defaults to en.
   --diff <path>            Read a unified diff from a file. Defaults to git diff base...HEAD.
   --format <markdown|json|sarif> Output format. Defaults to markdown.
   --fail-on <severity>     Exit 1 when a finding meets this severity. Use none to never fail.

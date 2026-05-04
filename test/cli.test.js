@@ -65,6 +65,27 @@ test("CLI writes SARIF and baseline files", () => {
   assert.equal(JSON.parse(readFileSync(baselinePath, "utf8")).version, 1);
 });
 
+test("CLI supports Chinese output", () => {
+  const result = spawnSync(process.execPath, [
+    cli,
+    "scan",
+    "--diff",
+    sampleDiff,
+    "--fail-on",
+    "none",
+    "--no-ai",
+    "--locale",
+    "zh-CN",
+  ], {
+    encoding: "utf8",
+    env: cleanEnv(),
+  });
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /PR Sentinel 报告/);
+  assert.match(result.stdout, /可能提交了敏感密钥/);
+});
+
 function cleanEnv() {
   const env = { ...process.env };
   delete env.OPENAI_API_KEY;

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { normalizeSeverity } from "./severity.js";
 
 export const DEFAULT_CONFIG = Object.freeze({
+  locale: "en",
   failOn: "high",
   minSeverity: "info",
   rules: {
@@ -55,6 +56,7 @@ export function normalizeConfig(config = {}) {
   }
 
   return {
+    locale: normalizeLocale(merged.locale),
     failOn,
     minSeverity,
     rules: {
@@ -155,6 +157,7 @@ function normalizeCliOverrides(overrides) {
   const config = {};
 
   if (overrides.failOn) config.failOn = overrides.failOn;
+  if (overrides.locale) config.locale = overrides.locale;
   if (overrides.minSeverity) config.minSeverity = overrides.minSeverity;
   if (overrides.excludeRule) config.rules = { disabled: toArray(overrides.excludeRule) };
   if (overrides.baseline) config.baseline = { path: overrides.baseline };
@@ -169,6 +172,13 @@ function normalizeCliOverrides(overrides) {
   }
 
   return config;
+}
+
+function normalizeLocale(locale) {
+  const normalized = String(locale ?? "en").toLowerCase();
+  if (normalized === "zh-cn" || normalized === "zh_cn") return "zh-CN";
+  if (normalized === "en" || normalized === "en-us") return "en";
+  throw new Error(`Invalid locale: ${locale}`);
 }
 
 function deepMerge(...values) {

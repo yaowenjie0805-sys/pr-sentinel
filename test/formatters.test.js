@@ -43,3 +43,23 @@ test("formats SARIF through formatResult", () => {
   assert.equal(sarif.version, "2.1.0");
   assert.equal(sarif.runs[0].results[0].ruleId, "risk");
 });
+
+test("formats markdown in Simplified Chinese", () => {
+  const markdown = formatResult({
+    locale: "zh-CN",
+    filesScanned: 1,
+    summary: { total: 1, high: 1, medium: 0, low: 0, info: 0 },
+    findings: [{
+      ruleId: "secret-api-key",
+      severity: "high",
+      title: "可能提交了敏感密钥",
+      message: "新增代码看起来像凭据材料。",
+      path: "src/config.js",
+      line: 1,
+    }],
+  }, "markdown", { locale: "zh-CN" });
+
+  assert.match(markdown, /# PR Sentinel 报告/);
+  assert.match(markdown, /严重级别/);
+  assert.match(markdown, /可能提交了敏感密钥/);
+});
