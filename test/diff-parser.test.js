@@ -37,3 +37,27 @@ index 0000000..2222222
   assert.equal(files[0].oldPath, null);
   assert.equal(files[0].newPath, "test/a.test.js");
 });
+
+test("handles deleted, renamed, and binary files", () => {
+  const diff = `diff --git a/src/old.js b/src/new.js
+similarity index 95%
+rename from src/old.js
+rename to src/new.js
+diff --git a/assets/logo.png b/assets/logo.png
+index 1111111..2222222 100644
+Binary files a/assets/logo.png and b/assets/logo.png differ
+diff --git a/src/remove.js b/src/remove.js
+deleted file mode 100644
+index 1111111..0000000
+--- a/src/remove.js
++++ /dev/null
+`;
+
+  const files = parseUnifiedDiff(diff);
+
+  assert.equal(files[0].status, "renamed");
+  assert.equal(files[0].path, "src/new.js");
+  assert.equal(files[1].binary, true);
+  assert.equal(files[2].status, "deleted");
+  assert.equal(files[2].path, "src/remove.js");
+});

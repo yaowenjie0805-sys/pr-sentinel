@@ -25,11 +25,31 @@ function formatMarkdown(result) {
   lines.push("| --- | --- | --- | --- |");
 
   for (const finding of result.findings) {
-    const location = finding.line ? `${finding.path}:${finding.line}` : finding.path;
+    const location = finding.path ? (finding.line ? `${finding.path}:${finding.line}` : finding.path) : "-";
     lines.push(`| ${finding.severity} | ${finding.ruleId} | ${location} | ${escapePipes(finding.title)}: ${escapePipes(finding.message)} |`);
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+export function toGitHubAnnotations(result) {
+  return result.findings
+    .filter((finding) => finding.path && finding.line)
+    .map((finding) => ({
+      path: finding.path,
+      start_line: finding.line,
+      end_line: finding.line,
+      annotation_level: toAnnotationLevel(finding.severity),
+      title: finding.title,
+      message: [finding.message, finding.recommendation].filter(Boolean).join("\n\nRecommendation: "),
+    }))
+    .slice(0, 50);
+}
+
+function toAnnotationLevel(severity) {
+  if (severity === "high" || severity === "medium") return "failure";
+  if (severity === "low") return "warning";
+  return "notice";
 }
 
 function escapePipes(value) {

@@ -1,0 +1,23 @@
+failOn: high
+minSeverity: info
+
+rules:
+  enabled: []
+  disabled: []
+
+paths:
+  include: []
+  exclude:
+    - dist/**
+    - coverage/**
+
+ai:
+  enabled: true
+  provider: openai
+  model: gpt-5.4-mini
+  strict: false
+  timeoutMs: 15000
+
+github:
+  comment: true
+  annotations: true

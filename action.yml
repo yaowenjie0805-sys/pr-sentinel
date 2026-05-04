@@ -1,7 +1,11 @@
 name: PR Sentinel
 description: Scan pull request diffs for review risk signals.
-author: ""
+author: Yao Wenjie
 inputs:
+  config:
+    description: Path to a .pr-sentinel.yml config file.
+    required: false
+    default: ""
   fail-on:
     description: Minimum severity that should fail the workflow.
     required: false
@@ -18,6 +22,22 @@ inputs:
     description: Comma-separated rule ids to skip.
     required: false
     default: ""
+  ai-provider:
+    description: AI provider to use. Supports openai, anthropic, or ollama.
+    required: false
+    default: ""
+  ai-model:
+    description: Custom AI model name for the selected provider.
+    required: false
+    default: ""
+  no-ai:
+    description: Disable AI review for this run.
+    required: false
+    default: "false"
+  github-token:
+    description: GitHub token used for PR comments and Checks annotations.
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -26,9 +46,13 @@ runs:
       run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
     - name: Run PR Sentinel
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token || github.token }}
       run: |
-        node "$GITHUB_ACTION_PATH/bin/pr-sentinel.js" \
-          --fail-on "${{ inputs.fail-on }}" \
-          --min-severity "${{ inputs.min-severity }}" \
-          --format "${{ inputs.format }}" \
-          --exclude-rule "${{ inputs.exclude-rule }}"
+        args=(scan --fail-on "${{ inputs.fail-on }}" --min-severity "${{ inputs.min-severity }}" --format "${{ inputs.format }}")
+        if [ -n "${{ inputs.config }}" ]; then args+=(--config "${{ inputs.config }}"); fi
+        if [ -n "${{ inputs.exclude-rule }}" ]; then args+=(--exclude-rule "${{ inputs.exclude-rule }}"); fi
+        if [ -n "${{ inputs.ai-provider }}" ]; then args+=(--ai-provider "${{ inputs.ai-provider }}"); fi
+        if [ -n "${{ inputs.ai-model }}" ]; then args+=(--ai-model "${{ inputs.ai-model }}"); fi
+        if [ "${{ inputs.no-ai }}" = "true" ]; then args+=(--no-ai); fi
+        node "$GITHUB_ACTION_PATH/bin/pr-sentinel.js" "${args[@]}"

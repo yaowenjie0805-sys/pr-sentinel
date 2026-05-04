@@ -151,11 +151,13 @@ export const builtInRules = [
 function createFinding({ ruleId, severity, title, message, file, line }) {
   return {
     ruleId,
+    source: "rule",
     severity,
     title,
     message,
     path: file.path,
     line: line?.newLine ?? line?.oldLine ?? null,
+    recommendation: null,
   };
 }
 

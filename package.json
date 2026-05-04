@@ -1,15 +1,18 @@
 {
   "name": "pr-sentinel",
-  "version": "0.1.0",
-  "description": "A lightweight PR risk scanner for code review automation.",
+  "version": "1.0.0",
+  "description": "An enterprise pull request risk scanner with deterministic rules and AI review.",
   "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "bin": {
     "pr-sentinel": "./bin/pr-sentinel.js"
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check bin/pr-sentinel.js && node --check src/diff-parser.js && node --check src/formatters.js && node --check src/github.js && node --check src/rules.js && node --check src/scanner.js && node --check src/severity.js && node --check test/diff-parser.test.js && node --check test/scanner.test.js && node --check test/severity.test.js",
-    "scan:sample": "node bin/pr-sentinel.js --diff test/fixtures/sample.diff --format markdown --fail-on none"
+    "check": "node --check bin/pr-sentinel.js && node --check src/ai.js && node --check src/config.js && node --check src/diff-parser.js && node --check src/formatters.js && node --check src/github.js && node --check src/index.js && node --check src/path-filter.js && node --check src/rules.js && node --check src/scanner.js && node --check src/severity.js && node --check test/ai.test.js && node --check test/cli.test.js && node --check test/config.test.js && node --check test/diff-parser.test.js && node --check test/formatters.test.js && node --check test/github.test.js && node --check test/scanner.test.js && node --check test/severity.test.js",
+    "scan:sample": "node bin/pr-sentinel.js scan --diff test/fixtures/sample.diff --format markdown --fail-on none --no-ai"
   },
   "keywords": [
     "github-action",
@@ -18,8 +21,16 @@
     "risk-scanner",
     "ci"
   ],
-  "author": "",
+  "author": "Yao Wenjie",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yaowenjie0805-sys/pr-sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yaowenjie0805-sys/pr-sentinel/issues"
+  },
+  "homepage": "https://github.com/yaowenjie0805-sys/pr-sentinel#readme",
   "engines": {
     "node": ">=20"
   },
@@ -27,7 +38,9 @@
     "bin",
     "src",
     "action.yml",
+    ".pr-sentinel.yml",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ]
 }

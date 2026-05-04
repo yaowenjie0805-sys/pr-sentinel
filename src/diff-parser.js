@@ -38,6 +38,11 @@ export function parseUnifiedDiff(diffText) {
       continue;
     }
 
+    if (rawLine.startsWith("Binary files ")) {
+      currentFile.binary = true;
+      continue;
+    }
+
     if (rawLine.startsWith("--- ")) {
       currentFile.oldPath = normalizeDiffPath(rawLine.slice(4));
       continue;
@@ -45,7 +50,7 @@ export function parseUnifiedDiff(diffText) {
 
     if (rawLine.startsWith("+++ ")) {
       currentFile.newPath = normalizeDiffPath(rawLine.slice(4));
-      currentFile.path = currentFile.newPath || currentFile.path;
+      currentFile.path = currentFile.newPath || currentFile.oldPath || currentFile.path;
       continue;
     }
 
@@ -96,6 +101,7 @@ function createFile(line) {
     oldPath,
     newPath,
     status: "modified",
+    binary: false,
     hunks: [],
     addedLines: [],
     removedLines: [],

@@ -1,8 +1,8 @@
 # PR Sentinel
 
-PR Sentinel is a lightweight pull request risk scanner. It reads a unified diff, applies deterministic review rules, and prints a Markdown or JSON report that works locally and in GitHub Actions.
+PR Sentinel is an enterprise pull request risk scanner. It reads a unified diff, applies deterministic review rules, optionally runs AI review, and publishes Markdown, JSON, GitHub Step Summary, PR comments, and Checks annotations.
 
-This is intentionally small for the first version: no external services, no required token, and no model dependency. It gives maintainers useful signals before a human reviewer spends time on the PR.
+AI review is enabled by default, but it degrades safely: if no provider credentials are configured, PR Sentinel still runs deterministic rules and reports why AI review was skipped.
 
 ## What It Detects
 
@@ -23,14 +23,22 @@ npm run scan:sample
 Scan the current branch against the default base:
 
 ```bash
-node bin/pr-sentinel.js --format markdown --fail-on high
+node bin/pr-sentinel.js scan --format markdown --fail-on high
 ```
 
 Scan a saved diff:
 
 ```bash
 git diff main...HEAD > pr.diff
-node bin/pr-sentinel.js --diff pr.diff --format json
+node bin/pr-sentinel.js scan --diff pr.diff --format json
+```
+
+Use a custom AI model:
+
+```bash
+node bin/pr-sentinel.js scan --diff pr.diff --ai-provider openai --ai-model gpt-5.4-mini
+node bin/pr-sentinel.js scan --diff pr.diff --ai-provider anthropic --ai-model claude-sonnet-4-5
+node bin/pr-sentinel.js scan --diff pr.diff --ai-provider ollama --ai-model llama3.1
 ```
 
 ## GitHub Action
@@ -41,6 +49,11 @@ name: PR Sentinel
 on:
   pull_request:
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -48,31 +61,80 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: your-org/pr-sentinel@v0
+      - uses: yaowenjie0805-sys/pr-sentinel@v1
         with:
           fail-on: high
           min-severity: info
+          ai-provider: openai
+          ai-model: gpt-5.4-mini
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
+
+Use Anthropic by setting `ai-provider: anthropic` and `ANTHROPIC_API_KEY`. Use Ollama with `ai-provider: ollama` and configure `ai.baseUrl` in `.pr-sentinel.yml` when the service is not on `http://localhost:11434`.
+
+## Configuration
+
+Create `.pr-sentinel.yml`:
+
+```yaml
+failOn: high
+minSeverity: info
+
+rules:
+  enabled: []
+  disabled:
+    - large-change
+
+paths:
+  include: []
+  exclude:
+    - dist/**
+    - coverage/**
+
+ai:
+  enabled: true
+  provider: openai
+  model: gpt-5.4-mini
+  strict: false
+  timeoutMs: 15000
+
+github:
+  comment: true
+  annotations: true
+```
+
+CLI flags override the config file. The config file overrides built-in defaults.
 
 ## CLI Options
 
 ```text
---diff <path>             Read a unified diff from a file. Defaults to git diff base...HEAD.
---format <markdown|json>  Output format. Defaults to markdown.
---fail-on <severity>      Exit 1 when a finding meets this severity. Use none to never fail. Defaults to high.
---min-severity <severity> Hide findings below this severity. Defaults to info.
---exclude-rule <ids>      Comma-separated rule ids to skip.
+--config <path>          Read .pr-sentinel.yml from a custom path.
+--diff <path>            Read a unified diff from a file. Defaults to git diff base...HEAD.
+--format <markdown|json> Output format. Defaults to markdown.
+--fail-on <severity>     Exit 1 when a finding meets this severity. Use none to never fail.
+--min-severity <level>   Hide findings below this severity.
+--exclude-rule <ids>     Comma-separated rule ids to skip.
+--no-ai                  Disable AI review for this run.
+--ai-provider <name>     openai, anthropic, or ollama.
+--ai-model <model>       Custom provider model name.
+--write-report <path>    Write the report to a file.
 ```
 
 Severities are `info`, `low`, `medium`, and `high`. For `--fail-on`, use `none` to report without failing.
 
 ## Roadmap
 
-- Inline PR comments through the GitHub API
-- Config file support with path-specific rule tuning
-- Optional LLM review layer for semantic risk notes
 - SARIF output for GitHub code scanning
-- npm package publishing and versioned Action releases
+- Persistent baseline support for legacy findings
+- Policy packs for common stacks
+
+## Enterprise Rollout
+
+- Start with `failOn: high` and keep AI `strict: false`.
+- Add `paths.exclude` for generated assets and vendored code.
+- Pin the Action with `@v1` for stability.
+- Use provider-specific secrets rather than hardcoding credentials in config.
 
 ## Development
 
