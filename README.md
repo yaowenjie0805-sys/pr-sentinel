@@ -154,7 +154,7 @@ node bin/pr-sentinel.js scan --diff pr.diff --baseline .pr-sentinel-baseline.jso
 
 ## Release
 
-Publishing a GitHub Release runs the release workflow, verifies tests/checks on Node.js 22, and publishes to npm with `NPM_TOKEN`.
+Publishing a GitHub Release runs the release workflow and verifies tests/checks on Node.js 22. If `NPM_TOKEN` is configured, the workflow also publishes to npm; otherwise npm publishing is skipped.
 
 To publish the GitHub Action major version, create or move the `v1` tag to the release commit.
 

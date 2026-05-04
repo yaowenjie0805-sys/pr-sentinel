@@ -18,6 +18,11 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm test
       - run: npm run check
-      - run: npm publish
+      - name: Publish to npm
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Skip npm publish
+        if: ${{ secrets.NPM_TOKEN == '' }}
+        run: echo "NPM_TOKEN is not configured; skipping npm publish."
