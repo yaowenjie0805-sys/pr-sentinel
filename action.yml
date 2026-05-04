@@ -1,0 +1,34 @@
+name: PR Sentinel
+description: Scan pull request diffs for review risk signals.
+author: ""
+inputs:
+  fail-on:
+    description: Minimum severity that should fail the workflow.
+    required: false
+    default: high
+  min-severity:
+    description: Minimum severity to include in the report.
+    required: false
+    default: info
+  format:
+    description: Output format. Use markdown or json.
+    required: false
+    default: markdown
+  exclude-rule:
+    description: Comma-separated rule ids to skip.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Fetch base branch
+      shell: bash
+      run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
+    - name: Run PR Sentinel
+      shell: bash
+      run: |
+        node "$GITHUB_ACTION_PATH/bin/pr-sentinel.js" \
+          --fail-on "${{ inputs.fail-on }}" \
+          --min-severity "${{ inputs.min-severity }}" \
+          --format "${{ inputs.format }}" \
+          --exclude-rule "${{ inputs.exclude-rule }}"
