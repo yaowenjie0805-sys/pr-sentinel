@@ -19,10 +19,12 @@ jobs:
       - run: npm test
       - run: npm run check
       - name: Publish to npm
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: npm publish
+        shell: bash
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not configured; skipping npm publish."
+            exit 0
+          fi
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Skip npm publish
-        if: ${{ secrets.NPM_TOKEN == '' }}
-        run: echo "NPM_TOKEN is not configured; skipping npm publish."
