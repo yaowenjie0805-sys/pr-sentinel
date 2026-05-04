@@ -12,6 +12,12 @@ AI review is enabled by default, but it degrades safely: if no provider credenti
 - Source changes without tests
 - Public API export changes
 - Very large file changes
+- GitHub Actions broad permissions, `pull_request_target`, and unpinned third-party Actions
+- Dockerfiles that run as root or pipe remote scripts into a shell
+- Kubernetes privileged containers and host namespace access
+- Terraform public ingress and IAM wildcard permissions
+- Destructive SQL migrations
+- npm install lifecycle scripts
 
 ## Quick Start
 
@@ -155,6 +161,8 @@ To publish the GitHub Action major version, create or move the `v1` tag to the r
 ## Roadmap
 
 - Policy packs for common stacks
+- Duplicate PR comment updating
+- AI confidence and cost reporting
 
 ## Enterprise Rollout
 
