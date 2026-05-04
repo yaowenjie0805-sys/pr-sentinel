@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -33,6 +36,33 @@ test("CLI fails on high finding by default", () => {
   });
 
   assert.equal(result.status, 1);
+});
+
+test("CLI writes SARIF and baseline files", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pr-sentinel-"));
+  const sarifPath = join(dir, "report.sarif");
+  const baselinePath = join(dir, "baseline.json");
+  const result = spawnSync(process.execPath, [
+    cli,
+    "scan",
+    "--diff",
+    sampleDiff,
+    "--fail-on",
+    "none",
+    "--no-ai",
+    "--write-sarif",
+    sarifPath,
+    "--baseline",
+    baselinePath,
+    "--update-baseline",
+  ], {
+    encoding: "utf8",
+    env: cleanEnv(),
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(JSON.parse(readFileSync(sarifPath, "utf8")).version, "2.1.0");
+  assert.equal(JSON.parse(readFileSync(baselinePath, "utf8")).version, 1);
 });
 
 function cleanEnv() {

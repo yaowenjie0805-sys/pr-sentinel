@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Added SARIF output for GitHub Code Scanning.
+- Added baseline creation and filtering for legacy findings.
+- Added release automation, contributing guide, and security policy.
 - Added `.pr-sentinel.yml` configuration.
 - Added `pr-sentinel scan` CLI command with custom AI model support.
 - Added OpenAI, Anthropic, and Ollama AI provider adapters.

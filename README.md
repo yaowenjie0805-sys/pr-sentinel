@@ -1,6 +1,6 @@
 # PR Sentinel
 
-PR Sentinel is an enterprise pull request risk scanner. It reads a unified diff, applies deterministic review rules, optionally runs AI review, and publishes Markdown, JSON, GitHub Step Summary, PR comments, and Checks annotations.
+PR Sentinel is an enterprise pull request risk scanner. It reads a unified diff, applies deterministic review rules, optionally runs AI review, and publishes Markdown, JSON, SARIF, GitHub Step Summary, PR comments, and Checks annotations.
 
 AI review is enabled by default, but it degrades safely: if no provider credentials are configured, PR Sentinel still runs deterministic rules and reports why AI review was skipped.
 
@@ -31,6 +31,12 @@ Scan a saved diff:
 ```bash
 git diff main...HEAD > pr.diff
 node bin/pr-sentinel.js scan --diff pr.diff --format json
+```
+
+Write SARIF for GitHub Code Scanning:
+
+```bash
+node bin/pr-sentinel.js scan --diff pr.diff --format sarif --write-sarif pr-sentinel.sarif --fail-on none
 ```
 
 Use a custom AI model:
@@ -67,6 +73,7 @@ jobs:
           min-severity: info
           ai-provider: openai
           ai-model: gpt-5.4-mini
+          write-sarif: pr-sentinel.sarif
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
@@ -92,6 +99,10 @@ paths:
     - dist/**
     - coverage/**
 
+baseline:
+  path: .pr-sentinel-baseline.json
+  update: false
+
 ai:
   enabled: true
   provider: openai
@@ -111,22 +122,38 @@ CLI flags override the config file. The config file overrides built-in defaults.
 ```text
 --config <path>          Read .pr-sentinel.yml from a custom path.
 --diff <path>            Read a unified diff from a file. Defaults to git diff base...HEAD.
---format <markdown|json> Output format. Defaults to markdown.
+--format <markdown|json|sarif> Output format. Defaults to markdown.
 --fail-on <severity>     Exit 1 when a finding meets this severity. Use none to never fail.
 --min-severity <level>   Hide findings below this severity.
 --exclude-rule <ids>     Comma-separated rule ids to skip.
 --no-ai                  Disable AI review for this run.
 --ai-provider <name>     openai, anthropic, or ollama.
 --ai-model <model>       Custom provider model name.
+--baseline <path>        Filter findings already recorded in a baseline file.
+--update-baseline        Write the current full findings to the baseline file.
 --write-report <path>    Write the report to a file.
+--write-sarif <path>     Write a SARIF report alongside the main report.
 ```
 
 Severities are `info`, `low`, `medium`, and `high`. For `--fail-on`, use `none` to report without failing.
 
+## Baselines
+
+Baseline files help teams adopt PR Sentinel in repositories with known legacy findings. Existing findings in the baseline are filtered from the current report, while new findings still appear and can still fail CI.
+
+```bash
+node bin/pr-sentinel.js scan --diff pr.diff --update-baseline --fail-on none --no-ai
+node bin/pr-sentinel.js scan --diff pr.diff --baseline .pr-sentinel-baseline.json
+```
+
+## Release
+
+Publishing a GitHub Release runs the release workflow, verifies tests/checks on Node.js 22, and publishes to npm with `NPM_TOKEN`.
+
+To publish the GitHub Action major version, create or move the `v1` tag to the release commit.
+
 ## Roadmap
 
-- SARIF output for GitHub code scanning
-- Persistent baseline support for legacy findings
 - Policy packs for common stacks
 
 ## Enterprise Rollout

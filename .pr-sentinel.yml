@@ -11,6 +11,10 @@ paths:
     - dist/**
     - coverage/**
 
+baseline:
+  path: .pr-sentinel-baseline.json
+  update: false
+
 ai:
   enabled: true
   provider: openai

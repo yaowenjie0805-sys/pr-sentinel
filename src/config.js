@@ -13,6 +13,10 @@ export const DEFAULT_CONFIG = Object.freeze({
     include: [],
     exclude: [],
   },
+  baseline: {
+    path: ".pr-sentinel-baseline.json",
+    update: false,
+  },
   ai: {
     enabled: true,
     provider: "openai",
@@ -60,6 +64,10 @@ export function normalizeConfig(config = {}) {
     paths: {
       include: toArray(merged.paths?.include),
       exclude: toArray(merged.paths?.exclude),
+    },
+    baseline: {
+      path: merged.baseline?.path ? String(merged.baseline.path) : ".pr-sentinel-baseline.json",
+      update: Boolean(merged.baseline?.update),
     },
     ai: {
       enabled: Boolean(merged.ai?.enabled),
@@ -149,6 +157,8 @@ function normalizeCliOverrides(overrides) {
   if (overrides.failOn) config.failOn = overrides.failOn;
   if (overrides.minSeverity) config.minSeverity = overrides.minSeverity;
   if (overrides.excludeRule) config.rules = { disabled: toArray(overrides.excludeRule) };
+  if (overrides.baseline) config.baseline = { path: overrides.baseline };
+  if (overrides.updateBaseline) config.baseline = { ...(config.baseline ?? {}), update: true };
   if (overrides.noAi) config.ai = { enabled: false };
   if (overrides.aiProvider || overrides.aiModel) {
     config.ai = {

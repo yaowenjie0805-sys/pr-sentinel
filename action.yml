@@ -15,9 +15,21 @@ inputs:
     required: false
     default: info
   format:
-    description: Output format. Use markdown or json.
+    description: Output format. Use markdown, json, or sarif.
     required: false
     default: markdown
+  baseline:
+    description: Path to a baseline JSON file.
+    required: false
+    default: ""
+  update-baseline:
+    description: Update the baseline file with current findings.
+    required: false
+    default: "false"
+  write-sarif:
+    description: Path to write a SARIF report.
+    required: false
+    default: ""
   exclude-rule:
     description: Comma-separated rule ids to skip.
     required: false
@@ -54,5 +66,8 @@ runs:
         if [ -n "${{ inputs.exclude-rule }}" ]; then args+=(--exclude-rule "${{ inputs.exclude-rule }}"); fi
         if [ -n "${{ inputs.ai-provider }}" ]; then args+=(--ai-provider "${{ inputs.ai-provider }}"); fi
         if [ -n "${{ inputs.ai-model }}" ]; then args+=(--ai-model "${{ inputs.ai-model }}"); fi
+        if [ -n "${{ inputs.baseline }}" ]; then args+=(--baseline "${{ inputs.baseline }}"); fi
+        if [ -n "${{ inputs.write-sarif }}" ]; then args+=(--write-sarif "${{ inputs.write-sarif }}"); fi
+        if [ "${{ inputs.update-baseline }}" = "true" ]; then args+=(--update-baseline); fi
         if [ "${{ inputs.no-ai }}" = "true" ]; then args+=(--no-ai); fi
         node "$GITHUB_ACTION_PATH/bin/pr-sentinel.js" "${args[@]}"

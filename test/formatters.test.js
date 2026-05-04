@@ -33,3 +33,13 @@ test("creates GitHub annotations for line findings only", () => {
   assert.equal(annotations[0].path, "src/a.js");
   assert.equal(annotations[0].annotation_level, "failure");
 });
+
+test("formats SARIF through formatResult", () => {
+  const output = formatResult({
+    findings: [{ ruleId: "risk", severity: "high", message: "Bad", path: "src/a.js", line: 1 }],
+  }, "sarif");
+  const sarif = JSON.parse(output);
+
+  assert.equal(sarif.version, "2.1.0");
+  assert.equal(sarif.runs[0].results[0].ruleId, "risk");
+});

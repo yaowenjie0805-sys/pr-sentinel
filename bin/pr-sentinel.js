@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import { loadConfig } from "../src/config.js";
 import { formatResult } from "../src/formatters.js";
 import { getGitHubDiffCommand, publishGitHubReport } from "../src/github.js";
 import { reviewWithAi } from "../src/ai.js";
 import { buildScanResult, scanDiff } from "../src/scanner.js";
 import { meetsSeverityThreshold } from "../src/severity.js";
+import { applyBaseline, createBaseline } from "../src/baseline.js";
+import { formatSarif } from "../src/sarif.js";
 
 try {
   await main();
@@ -36,6 +38,8 @@ async function main() {
       noAi: args["no-ai"],
       aiProvider: args["ai-provider"],
       aiModel: args["ai-model"],
+      baseline: args.baseline,
+      updateBaseline: args["update-baseline"],
     },
   });
   const diffText = await loadDiff(args);
@@ -46,18 +50,28 @@ async function main() {
     paths: config.paths,
   });
   const aiFindings = await reviewWithAi(diffText, config);
-  const result = buildScanResult(
+  const fullResult = buildScanResult(
     ruleResult.filesScanned,
     ruleResult.filesParsed,
     [...ruleResult.findings, ...aiFindings],
     config.minSeverity,
   );
+  const baseline = await loadBaseline(config.baseline.path);
+  const result = baseline ? applyBaseline(fullResult, baseline) : fullResult;
   const output = formatResult(result, args.format ?? "markdown");
 
   process.stdout.write(output);
 
   if (args["write-report"]) {
     await writeFile(args["write-report"], output);
+  }
+
+  if (args["write-sarif"]) {
+    await writeFile(args["write-sarif"], `${JSON.stringify(formatSarif(result), null, 2)}\n`);
+  }
+
+  if (config.baseline.update) {
+    await writeFile(config.baseline.path, `${JSON.stringify(createBaseline(fullResult), null, 2)}\n`);
   }
 
   try {
@@ -69,6 +83,18 @@ async function main() {
   if (result.findings.some((finding) => meetsSeverityThreshold(finding.severity, config.failOn))) {
     process.exitCode = 1;
   }
+}
+
+async function loadBaseline(path) {
+  if (!path) return null;
+
+  try {
+    await access(path);
+  } catch {
+    return null;
+  }
+
+  return JSON.parse(await readFile(path, "utf8"));
 }
 
 async function loadDiff(parsedArgs) {
@@ -109,6 +135,11 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === "--update-baseline") {
+      parsed["update-baseline"] = true;
+      continue;
+    }
+
     if (!arg.startsWith("--")) {
       throw new Error(`Unexpected argument: ${arg}`);
     }
@@ -133,14 +164,17 @@ Usage:
 Options:
   --config <path>          Read .pr-sentinel.yml from a custom path.
   --diff <path>            Read a unified diff from a file. Defaults to git diff base...HEAD.
-  --format <markdown|json> Output format. Defaults to markdown.
+  --format <markdown|json|sarif> Output format. Defaults to markdown.
   --fail-on <severity>     Exit 1 when a finding meets this severity. Use none to never fail.
   --min-severity <level>   Hide findings below this severity.
   --exclude-rule <ids>     Comma-separated rule ids to skip.
   --no-ai                  Disable AI review for this run.
   --ai-provider <name>     openai, anthropic, or ollama.
   --ai-model <model>       Custom provider model name.
+  --baseline <path>        Filter findings already recorded in a baseline file.
+  --update-baseline        Write the current full findings to the baseline file.
   --write-report <path>    Write the report to a file.
+  --write-sarif <path>     Write a SARIF report alongside the main report.
   --help                   Show this help.
 
 Environment:

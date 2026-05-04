@@ -1,6 +1,12 @@
+import { formatSarif } from "./sarif.js";
+
 export function formatResult(result, format = "markdown") {
   if (format === "json") {
     return `${JSON.stringify(result, null, 2)}\n`;
+  }
+
+  if (format === "sarif") {
+    return `${JSON.stringify(formatSarif(result), null, 2)}\n`;
   }
 
   return formatMarkdown(result);
